@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SZR — Prototype</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    padding: 24px 0;
+  }
+  .device-label {
+    color: #555;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .phone-shell {
+    width: 390px;
+    height: 844px;
+    background: #0D0D0F;
+    border-radius: 44px;
+    border: 8px solid #2a2a2a;
+    box-shadow: 0 0 0 2px #1a1a1a, 0 40px 80px rgba(0,0,0,0.8), inset 0 0 0 1px #333;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-notch {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 126px; height: 34px;
+    background: #2a2a2a;
+    border-radius: 0 0 20px 20px;
+    z-index: 999;
+  }
+  .screen-area {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-top: 34px;
+  }
+  /* Scrollbars hidden */
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+<div class="device-label">SZR — Interactive Prototype</div>
+<div class="phone-shell">
+  <div class="phone-notch"></div>
+  <div class="screen-area" id="root"></div>
+</div>
+
+<script type="text/babel">
+// ─────────────────────────────────────────────
+// DESIGN TOKENS
+// ─────────────────────────────────────────────
+const C = {
+  bg:       '#0D0D0F',
+  bg2:      '#1A1A1F',
+  bgCard:   '#222228',
+  accent:   '#C2527A',
+  mauve:    '#8B5E8C',
+  text:     '#F5F0F2',
+  text2:    '#9E8FA0',
+  border:   '#2E2832',
+  danger:   '#E05C5C',
+  online:   '#4CAF50',
+};
+
+const S = {
+  heading: { fontSize: 20, fontWeight: '600', color: C.text },
+  body:    { fontSize: 15, fontWeight: '400', color: C.text },
+  label:   { fontSize: 12, fontWeight: '500', color: C.text2, textTransform: 'uppercase', letterSpacing: 1 },
+};
+
+// ─────────────────────────────────────────────
+// MOCK DATA
+// ─────────────────────────────────────────────
+const USERS = [
+  { id:1,  name:'Zara',    age:26, distance:'0.3 km', online:true,  verified:true,  identity:['Lesbian','Femme'],       looking:['Dating','Hookup'],        bio:'Coffee shops, vinyl records, and dogs that are way too big for apartments. Looking for someone to make Sunday mornings chaotic.', photos:['https://picsum.photos/seed/zara1/400/500','https://picsum.photos/seed/zara2/400/500','https://picsum.photos/seed/zara3/400/500'] },
+  { id:2,  name:'Mia',     age:24, distance:'0.8 km', online:true,  verified:true,  identity:['Bisexual','Soft butch'], looking:['Casual','Open to anything'], bio:'Gemini sun, Scorpio rising. I make pottery and bad decisions. Very into you already.',                                      photos:['https://picsum.photos/seed/mia1/400/500','https://picsum.photos/seed/mia2/400/500'] },
+  { id:3,  name:'Rowan',   age:29, distance:'1.2 km', online:false, verified:true,  identity:['Queer','Non-binary'],    looking:['Long-term','Friends'],       bio:'Librarian by day, chaotic home cook by night. I will feed you.',                                                         photos:['https://picsum.photos/seed/rowan1/400/500','https://picsum.photos/seed/rowan2/400/500'] },
+  { id:4,  name:'Sasha',   age:27, distance:'1.5 km', online:true,  verified:false, identity:['Sapphic'],               looking:['Hookup','Casual'],           bio:'Aquarius. Climbing gyms and late-night drives.',                                                                         photos:['https://picsum.photos/seed/sasha1/400/500'] },
+  { id:5,  name:'Evie',    age:23, distance:'2.0 km', online:true,  verified:true,  identity:['Lesbian','Butch'],       looking:['Dating'],                    bio:'UX designer. Probably thinking about typography right now.',                                                             photos:['https://picsum.photos/seed/evie1/400/500','https://picsum.photos/seed/evie2/400/500'] },
+  { id:6,  name:'Luna',    age:31, distance:'2.4 km', online:false, verified:true,  identity:['Pansexual'],             looking:['Open to anything'],          bio:'Musician. Night owl. Professional overthinker who somehow never misses a show.',                                         photos:['https://picsum.photos/seed/luna1/400/500'] },
+  { id:7,  name:'Billie',  age:25, distance:'3.1 km', online:true,  verified:false, identity:['Lesbian','Chapstick'],   looking:['Hookup','Casual'],           bio:'Nurse. I know where all the pressure points are. Just saying.',                                                         photos:['https://picsum.photos/seed/billie1/400/500','https://picsum.photos/seed/billie2/400/500'] },
+  { id:8,  name:'Cleo',    age:28, distance:'3.5 km', online:false, verified:true,  identity:['Queer','Trans woman'],   looking:['Dating','Long-term'],        bio:'Tattooed, bookmarked, caffeinated. Looking for someone who argues about movies.',                                         photos:['https://picsum.photos/seed/cleo1/400/500'] },
+  { id:9,  name:'Indigo',  age:22, distance:'3.9 km', online:true,  verified:true,  identity:['Bisexual','Femme'],      looking:['Friends','Open to anything'],'bio':'Art student. Everything is a moodboard. You are a moodboard.',                                                          photos:['https://picsum.photos/seed/indigo1/400/500','https://picsum.photos/seed/indigo2/400/500'] },
+  { id:10, name:'Kai',     age:33, distance:'4.2 km', online:false, verified:true,  identity:['Sapphic','Stud'],        looking:['Dating','Hookup'],           bio:'Architect. I design spaces for living, not just looking.',                                                               photos:['https://picsum.photos/seed/kai1/400/500'] },
+  { id:11, name:'Petra',   age:30, distance:'4.8 km', online:true,  verified:false, identity:['Lesbian'],               looking:['Long-term'],                 bio:'Dog mom x2. Brunch is a personality.',                                                                                   photos:['https://picsum.photos/seed/petra1/400/500','https://picsum.photos/seed/petra2/400/500'] },
+  { id:12, name:'Wren',    age:26, distance:'5.6 km', online:true,  verified:true,  identity:['Queer','Non-binary'],    looking:['Casual','Hookup'],           bio:'Spent last summer busking in Barcelona. Back now. Looking for adventures smaller than that.',                            photos:['https://picsum.photos/seed/wren1/400/500'] },
+];
+
+const ME = { name:'Alex', age:27, identity:['Bisexual','Femme'], looking:['Dating','Open to anything'], bio:'Photographer + dog enthusiast. I take pictures of things I love.', photos:['https://picsum.photos/seed/alex1/400/500','https://picsum.photos/seed/alex2/400/500'] };
+
+const CONVERSATIONS = [
+  { id:1, user: USERS[0], lastMsg:'are you free tomorrow night?', time:'now',  unread:2 },
+  { id:2, user: USERS[4], lastMsg:'ok that place sounds perfect 🌹', time:'2m',  unread:0 },
+  { id:3, user: USERS[1], lastMsg:'you: haha ok deal', time:'1h',  unread:0 },
+  { id:4, user: USERS[7], lastMsg:'let me know when you\'re around', time:'3h',  unread:1 },
+];
+
+const MESSAGES = [
+  { id:1, from:'them', text:'hey, saw your profile 👋', time:'2:10 PM' },
+  { id:2, from:'me',   text:'hi! love your photos', time:'2:12 PM' },
+  { id:3, from:'them', text:'thank you!! coffee sometime?', time:'2:13 PM' },
+  { id:4, from:'me',   text:'absolutely, yes', time:'2:14 PM' },
+  { id:5, from:'them', text:'are you free tomorrow night?', time:'2:15 PM' },
+];
+
+// ─────────────────────────────────────────────
+// SHARED COMPONENTS
+// ─────────────────────────────────────────────
+function GradientText({ children, style={} }) {
+  return (
+    <span style={{
+      background: `linear-gradient(135deg, ${C.accent}, ${C.mauve})`,
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+      fontWeight: 700,
+      ...style,
+    }}>{children}</span>
+  );
+}
+
+function GradientBadge({ children }) {
+  return (
+    <div style={{
+      background: `linear-gradient(135deg, ${C.accent}, ${C.mauve})`,
+      borderRadius: 20,
+      padding: '4px 10px',
+      fontSize: 11,
+      fontWeight: 600,
+      color: '#fff',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 4,
+    }}>{children}</div>
+  );
+}
+
+function Pill({ label, color }) {
+  return (
+    <span style={{
+      background: color === 'mauve' ? 'rgba(139,94,140,0.2)' : 'rgba(194,82,122,0.2)',
+      border: `1px solid ${color === 'mauve' ? C.mauve : C.accent}`,
+      color: color === 'mauve' ? C.mauve : C.accent,
+      borderRadius: 20,
+      padding: '4px 12px',
+      fontSize: 12,
+      fontWeight: 500,
+    }}>{label}</span>
+  );
+}
+
+function QuickExit({ onPress }) {
+  return (
+    <button
+      onClick={onPress}
+      style={{
+        position: 'absolute', bottom: 80, right: 16, zIndex: 900,
+        width: 48, height: 48,
+        background: C.danger,
+        borderRadius: 24, border: 'none', cursor: 'pointer',
+        boxShadow: `0 4px 16px rgba(224,92,92,0.5)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 20,
+      }}
+      title="Quick Exit"
+    >✕</button>
+  );
+}
+
+function BottomTabs({ active, onTab }) {
+  const tabs = [
+    { id:'grid',     icon:'⊞',  label:'Grid' },
+    { id:'chats',    icon:'💬', label:'Chats' },
+    { id:'profile',  icon:'👤', label:'Profile' },
+    { id:'settings', icon:'🛡', label:'Safety' },
+  ];
+  return (
+    <div style={{
+      display: 'flex', height: 64,
+      background: C.bg2,
+      borderTop: `1px solid ${C.border}`,
+      flexShrink: 0,
+    }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => onTab(t.id)} style={{
+          flex: 1, border: 'none', background: 'none', cursor: 'pointer',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 2, color: active === t.id ? C.accent : C.text2,
+          fontSize: 20,
+          transition: 'color 0.15s',
+        }}>
+          <span>{t.icon}</span>
+          <span style={{ fontSize: 10, fontWeight: 500 }}>{t.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Header({ title, left, right }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center',
+      height: 52, paddingInline: 16,
+      background: C.bg,
+      borderBottom: `1px solid ${C.border}`,
+      flexShrink: 0, position: 'relative',
+    }}>
+      <div style={{ position: 'absolute', left: 16 }}>{left}</div>
+      <div style={{ flex: 1, textAlign: 'center' }}>
+        {typeof title === 'string'
+          ? <span style={{ fontSize: 17, fontWeight: 600, color: C.text }}>{title}</span>
+          : title}
+      </div>
+      <div style={{ position: 'absolute', right: 16 }}>{right}</div>
+    </div>
+  );
+}
+
+function IconBtn({ label, onClick, color }) {
+  return (
+    <button onClick={onClick} style={{
+      background: 'none', border: 'none', cursor: 'pointer',
+      color: color || C.text2, fontSize: 20, padding: 4,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>{label}</button>
+  );
+}
+
+// ─────────────────────────────────────────────
+// AGE GATE
+// ─────────────────────────────────────────────
+function AgeGateScreen({ navigate }) {
+  const [denied, setDenied] = React.useState(false);
+  if (denied) return (
+    <div style={{ flex:1, background:C.bg, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, gap:16 }}>
+      <div style={{ fontSize:48 }}>🚫</div>
+      <div style={{ ...S.heading, textAlign:'center' }}>Access Restricted</div>
+      <div style={{ ...S.body, color:C.text2, textAlign:'center' }}>SZR is only available to users 18 and older.</div>
+    </div>
+  );
+  return (
+    <div style={{ flex:1, background:C.bg, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, gap:0, overflowY:'auto' }}>
+      <div style={{
+        width:96, height:96, borderRadius:20,
+        background:`linear-gradient(135deg, ${C.accent}, ${C.mauve})`,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        marginBottom:16,
+        boxShadow:`0 8px 32px rgba(194,82,122,0.35)`,
+      }}>
+        <span style={{ fontSize:32, fontWeight:700, color:'#fff', letterSpacing:3 }}>SZR</span>
+      </div>
+      <div style={{ color:C.text2, fontSize:14, marginBottom:40, letterSpacing:0.5 }}>For women who love women.</div>
+
+      <div style={{
+        background:C.bgCard, borderRadius:16,
+        border:`1px solid ${C.border}`,
+        padding:24, width:'100%', marginBottom:24,
+        display:'flex', flexDirection:'column', gap:16,
+      }}>
+        <div style={{ ...S.heading, textAlign:'center' }}>Are you 18 or older?</div>
+        <div style={{ color:C.text2, fontSize:13, textAlign:'center', lineHeight:1.6 }}>
+          SZR contains adult content and is strictly for users aged 18+.
+        </div>
+        <button onClick={() => navigate('login')} style={{
+          background:`linear-gradient(135deg, ${C.accent}, ${C.mauve})`,
+          border:'none', borderRadius:24, padding:'14px 0',
+          color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer',
+          boxShadow:`0 4px 16px rgba(194,82,122,0.3)`,
+        }}>Yes, I'm 18+</button>
+        <button onClick={() => setDenied(true)} style={{
+          background:'none', border:`1px solid ${C.border}`,
+          borderRadius:24, padding:'14px 0',
+          color:C.text2, fontSize:15, cursor:'pointer',
+        }}>No, I'm under 18</button>
+      </div>
+      <div style={{ fontSize:11, color:C.text2, textAlign:'center', opacity:0.5, lineHeight:1.6 }}>
+        By continuing you agree to our Terms of Service and Privacy Policy.
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────
+function LoginScreen({ navigate }) {
+  const [email, setEmail] = React.useState('');
+  const [pass, setPass] = React.useState('');
+  const inputStyle = {
+    background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12,
+    padding:'14px 16px', color:C.text, fontSize:15, width:'100%', outline:'none',
+    fontFamily:'inherit',
+  };
+  return (
+    <div style={{ flex:1, background:C.bg, display:'flex', flexDirection:'column', overflowY:'auto' }}>
+      <div style={{ padding:'48px 32px 32px', display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
+        <div style={{
+          width:72, height:72, borderRadius:16,
+          background:`linear-gradient(135deg, ${C.accent}, ${C.mauve})`,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          boxShadow:`0 8px 24px rgba(194,82,122,0.35)`,
+        }}>
+          <span style={{ fontSize:22, fontWeight:700, color:'#fff', letterSpacing:2 }}>SZR</span>
+        </div>
+        <div style={{ ...S.heading, marginTop:8 }}>Welcome back</div>
+        <div style={{ color:C.text2, fontSize:14 }}>Sign in to your account</div>
+      </div>
+
+      <div style={{ padding:'0 24px', display:'flex', flexDirection:'column', gap:14, flex:1 }}>
+        <input
+          style={inputStyle} placeholder="Email address"
+          value={email} onChange={e => setEmail(e.target.value)}
+          type="email"
+        />
+        <input
+          style={inputStyle} placeholder="Password"
+          value={pass} onChange={e => setPass(e.target.value)}
+          type="password"
+        />
+        <button onClick={() => navigate('grid')} style={{
+          background:`linear-gradient(135deg, ${C.accent}, ${C.mauve})`,
+          border:'none', borderRadius:24, padding:'16px 0',
+          color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer',
+          boxShadow:`0 4px 16px rgba(194,82,122,0.3)`,
+          marginTop:8,
+        }}>Sign In</button>
+
+        <div style={{ textAlign:'center', color:C.text2, fontSize:13, marginTop:4 }}>
+          Don't have an account?{' '}
+          <span style={{ color:C.accent, cursor:'pointer', fontWeight:500 }} onClick={() => navigate('signup')}>
+            Create one
+          </span>
+        </div>
+
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:8 }}>
+          <div style={{ flex:1, height:1, background:C.border }}/>
+          <span style={{ color:C.text2, fontSize:12 }}>or</span>
+          <div style={{ flex:1, height:1, background:C.border }}/>
+        </div>
+
+        <button onClick={() => navigate('grid')} style={{
+          background:'none', border:`1px solid ${C.border}`,
+          borderRadius:24, padding:'14px 0',
+          color:C.text, fontSize:15, cursor:'pointer',
+          display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+        }}>
+          <span>🍎</span> Continue with Apple
+        </button>
+        <button onClick={() => navigate('grid')} style={{
+          background:'none', border:`1px solid ${C.border}`,
+          borderRadius:24, padding:'14px 0',
+          color:C.text, fontSize:15, cursor:'pointer',
+          display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+          marginBottom:32,
+        }}>
+          <span>🌐</span> Continue with Google
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SIGNUP
+// ─────────────────────────────────────────────
+function SignupScreen({ navigate }) {
+  const inputStyle = {
+    background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12,
+    padding:'14px 16px', color:C.text, fontSize:15, width:'100%', outline:'none',
+    fontFamily:'inherit',
+  };
+  return (
+    <div style={{ flex:1, background:C.bg, display:'flex', flexDirection:'column', overflowY:'auto' }}>
+      <div style={{ padding:'32px 24px 0', display:'flex', alignItems:'center', gap:12 }}>
+        <button onClick={() => navigate('login')} style={{ background:'none', border:'none', cursor:'pointer', color:C.text2, fontSize:22 }}>←</button>
+        <div style={{ ...S.heading }}>Create account</div>
+      </div>
+      <div style={{ padding:'24px 24px', display:'flex', flexDirection:'column', gap:14 }}>
+        <input style={inputStyle} placeholder="Email address" type="email"/>
+        <input style={inputStyle} placeholder="Password" type="password"/>
+        <input style={inputStyle} placeholder="Confirm password" type="password"/>
+        <input style={inputStyle} placeholder="Your age" type="number"/>
+
+        <div style={{ color:C.text2, fontSize:12, lineHeight:1.6 }}>
+          By creating an account you confirm you are 18+ and agree to our{' '}
+          <span style={{ color:C.accent }}>Terms of Service</span> and{' '}
+          <span style={{ color:C.accent }}>Privacy Policy</span>.
+        </div>
+
+        <button onClick={() => navigate('grid')} style={{
+          background:`linear-gradient(135deg, ${C.accent}, ${C.mauve})`,
+          border:'none', borderRadius:24, padding:'16px 0',
+          color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer',
+          boxShadow:`0 4px 16px rgba(194,82,122,0.3)`,
+          marginTop:4,
+        }}>Create Account</button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// GRID
+// ─────────────────────────────────────────────
+function GridTile({ user, onClick }) {
+  return (
+    <div onClick={() => onClick(user)} style={{
+      position:'relative', aspectRatio:'1/1.1', borderRadius:12,
+      overflow:'hidden', cursor:'pointer', flexShrink:0,
+    }}>
+      <img
+        src={user.photos[0]}
+        style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+        loading="lazy"
+      />
+      {/* Gradient overlay */}
+      <div style={{
+        position:'absolute', bottom:0, left:0, right:0, height:'60%',
+        background:'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
+      }}/>
+      {/* Online dot */}
+      {user.online && (
+        <div style={{
+          position:'absolute', top:7, left:7,
+          width:10, height:10, borderRadius:5,
+          background:C.online,
+          border:'2px solid #0D0D0F',
+          boxShadow:`0 0 6px ${C.online}88`,
+        }}/>
+      )}
+      {/* Verified badge */}
+      {user.verified && (
+        <div style={{
+          position:'absolute', top:6, right:6,
+          background:`linear-gradient(135deg, ${C.accent}, ${C.mauve})`,
+          borderRadius:10, padding:'2px 6px',
+          fontSize:9, color:'#fff', fontWeight:600,
+        }}>✓</div>
+      )}
+      {/* Name + distance */}
+      <div style={{ position:'absolute', bottom:6, left:7, right:7 }}>
+        <div style={{ color:'#fff', fontSize:12, fontWeight:600, lineHeight:1.2 }}>{user.name}</div>
+        <div style={{ color:'rgba(255,255,255,0.7)', fontSize:10 }}>{user.distance}</div>
+      </div>
+    </div>
+  );
+}
+
+function GridScreen({ navigate, onQuickExit }) {
+  const [showFilter, setShowFilter] = React.useState(false);
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.bg, overflow:'hidden' }}>
+      <Header
+        title={<GradientText style={{ fontSize:22, letterSpacing:2 }}>SZR</GradientText>}
+        left={<IconBtn label="⚙" onClick={() => setShowFilter(!showFilter)} />}
+        right={<IconBtn label="🔔" onClick={() => {}} />}
+      />
+
+      {showFilter && (
+        <div style={{
+          background:C.bg2, borderBottom:`1px solid ${C.border}`,
+          padding:'12px 16px', display:'flex', flexDirection:'column', gap:10,
+        }}>
+          <div style={{ ...S.label }}>Filters</div>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            {['Nearby','Online now','Verified','New faces'].map(f => (
+              <button key={f} style={{
+                background:f==='Nearby'?`linear-gradient(135deg,${C.accent},${C.mauve})`:'none',
+                border:`1px solid ${f==='Nearby'?C.accent:C.border}`,
+                borderRadius:20, padding:'6px 14px',
+                color:f==='Nearby'?'#fff':C.text2, fontSize:12, cursor:'pointer',
+              }}>{f}</button>
+            ))}
+          </div>
+          <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+            <span style={{ color:C.text2, fontSize:13 }}>Max distance:</span>
+            <input type="range" min={1} max={50} defaultValue={10} style={{ flex:1, accentColor:C.accent }}/>
+            <span style={{ color:C.text, fontSize:13, width:40 }}>10 km</span>
+          </div>
+        </div>
+      )}
+
+      <div style={{ flex:1, overflowY:'auto', padding:2 }}>
+        <div style={{
+          display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:2, padding:2,
+        }}>
+          {USERS.map(u => (
+            <GridTile key={u.id} user={u} onClick={() => navigate('profile-detail', u)} />
+          ))}
+        </div>
+      </div>
+      <QuickExit onPress={onQuickExit} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// PROFILE DETAIL
+// ─────────────────────────────────────────────
+function ProfileDetailScreen({ user, navigate, onChat }) {
+  const [photoIdx, setPhotoIdx] = React.useState(0);
+  const [bioExpanded, setBioExpanded] = React.useState(false);
+  const [liked, setLiked] = React.useState(false);
+  const [showReport, setShowReport] = React.useState(false);
+
+  if (!user) return null;
+
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.bg, overflow:'hidden' }}>
+      {/* Photo area — 55% height */}
+      <div style={{ position:'relative', height:'55%', flexShrink:0 }}>
+        <img
+          src={user.photos[photoIdx]}
+          style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+        />
+        {/* Top gradient */}
+        <div style={{ position:'absolute', top:0, left:0, right:0, height:80,
+          background:'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }}/>
+        {/* Bottom gradient */}
+        <div style={{ position:'absolute', bottom:0, left:0, right:0, height:100,
+          background:'linear-gradient(to top, rgba(13,13,15,1), transparent)' }}/>
+
+        {/* Back button */}
+        <button onClick={() => navigate('back')} style={{
+          position:'absolute', top:12, left:12,
+          background:'rgba(0,0,0,0.5)', border:'none', borderRadius:20,
+          width:36, height:36, cursor:'pointer', color:'#fff', fontSize:18,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>←</button>
+
+        {/* Photo dots */}
+        {user.photos.length > 1 && (
+          <div style={{
+            position:'absolute', bottom:16, left:0, right:0,
+            display:'flex', justifyContent:'center', gap:6,
+          }}>
+            {user.photos.map((_, i) => (
+              <button key={i} onClick={() => setPhotoIdx(i)} style={{
+                width:i===photoIdx?20:6, height:6,
+                borderRadius:3,
+                background: i===photoIdx ? C.accent : 'rgba(255,255,255,0.4)',
+                border:'none', cursor:'pointer', padding:0,
+                transition:'width 0.2s',
+              }}/>
+            ))}
+          </div>
+        )}
+
+        {/* Tap zones for photo nav */}
+        {user.photos.length > 1 && <>
+          <div onClick={() => setPhotoIdx(i => Math.max(0, i-1))}
+            style={{ position:'absolute', top:0, left:0, width:'40%', height:'100%', cursor:'pointer' }}/>
+          <div onClick={() => setPhotoIdx(i => Math.min(user.photos.length-1, i+1))}
+            style={{ position:'absolute', top:0, right:0, width:'40%', height:'100%', cursor:'pointer' }}/>
+        </>}
+      </div>
+
+      {/* Info area */}
+      <div style={{ flex:1, overflowY:'auto', padding:'0 16px 16px' }}>
+        {/* Name row */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4, marginTop:8 }}>
+          <div style={{ fontSize:24, fontWeight:700, color:C.text }}>{user.name}</div>
+          <div style={{ color:C.text2, fontSize:18 }}>{user.age}</div>
+          {user.verified && (
+            <GradientBadge>✓ Verified</GradientBadge>
+          )}
+          {user.online && (
+            <div style={{ display:'flex', alignItems:'center', gap:4, marginLeft:'auto' }}>
+              <div style={{ width:8, height:8, borderRadius:4, background:C.online }}/>
+              <span style={{ color:C.online, fontSize:12 }}>Online</span>
+            </div>
+          )}
+        </div>
+        <div style={{ color:C.text2, fontSize:13, marginBottom:16 }}>📍 {user.distance} away</div>
+
+        {/* Bio */}
+        <div style={{
+          background:C.bgCard, borderRadius:12, padding:14,
+          marginBottom:16, border:`1px solid ${C.border}`,
+        }}>
+          <div style={{ color:C.text, fontSize:14, lineHeight:1.6 }}>
+            {bioExpanded || user.bio.length < 80
+              ? user.bio
+              : user.bio.slice(0, 80) + '...'}
+          </div>
+          {user.bio.length > 80 && (
+            <button onClick={() => setBioExpanded(!bioExpanded)} style={{
+              background:'none', border:'none', color:C.accent,
+              fontSize:13, cursor:'pointer', padding:'6px 0 0',
+            }}>{bioExpanded ? 'Show less' : 'Read more'}</button>
+          )}
+        </div>
+
+        {/* Identity tags */}
+        <div style={{ ...S.label, marginBottom:8 }}>Identity</div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
+          {user.identity.map(t => <Pill key={t} label={t} color="mauve"/>)}
+        </div>
+
+        {/* Looking for tags */}
+        <div style={{ ...S.label, marginBottom:8 }}>Looking for</div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:24 }}>
+          {user.looking.map(t => <Pill key={t} label={t} color="rose"/>)}
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display:'flex', gap:10, marginBottom:16 }}>
+          <button onClick={() => onChat(user)} style={{
+            flex:1, background:`linear-gradient(135deg,${C.accent},${C.mauve})`,
+            border:'none', borderRadius:24, padding:'14px 0',
+            color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer',
+            boxShadow:`0 4px 16px rgba(194,82,122,0.3)`,
+          }}>Message</button>
+          <button onClick={() => setLiked(!liked)} style={{
+            width:52, height:52, borderRadius:26,
+            background: liked ? 'rgba(194,82,122,0.2)' : C.bgCard,
+            border: `1px solid ${liked ? C.accent : C.border}`,
+            cursor:'pointer', fontSize:22,
+            display:'flex', alignItems:'center', justifyContent:'center',
+          }}>{liked ? '❤️' : '🤍'}</button>
+          <button style={{
+            width:52, height:52, borderRadius:26,
+            background:C.bgCard, border:`1px solid ${C.border}`,
+            cursor:'pointer', fontSize:20,
+            display:'flex', alignItems:'center', justifyContent:'center',
+          }}>🚫</button>
+        </div>
+
+        {/* Report */}
+        <button onClick={() => setShowReport(true)} style={{
+          background:'none', border:'none', color:C.text2,
+          fontSize:13, cursor:'pointer', textDecoration:'underline',
+          display:'block', margin:'0 auto 8px',
+        }}>Report {user.name}</button>
+      </div>
+
+      {/* Report modal */}
+      {showReport && (
+        <div style={{
+          position:'absolute', inset:0, background:'rgba(0,0,0,0.75)',
+          display:'flex', alignItems:'flex-end', zIndex:800,
+        }} onClick={() => setShowReport(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background:C.bg2, borderRadius:'20px 20px 0 0',
+            padding:24, width:'100%',
+            border:`1px solid ${C.border}`,
+          }}>
+            <div style={{ ...S.heading, marginBottom:4 }}>Report {user.name}</div>
+            <div style={{ color:C.text2, fontSize:13, marginBottom:16 }}>
+              Select the reason for reporting:
+            </div>
+            {['Fake profile','Harassment','Underage','Spam','Inappropriate content','Other'].map(r => (
+              <button key={r} onClick={() => setShowReport(false)} style={{
+                display:'block', width:'100%', textAlign:'left',
+                background:C.bgCard, border:`1px solid ${C.border}`,
+                borderRadius:10, padding:'12px 16px',
+                color:C.text, fontSize:14, cursor:'pointer', marginBottom:8,
+              }}>{r}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// CHAT LIST
+// ─────────────────────────────────────────────
+function ChatListScreen({ navigate, onQuickExit }) {
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.bg, overflow:'hidden' }}>
+      <Header title="Messages" right={<IconBtn label="✏️" onClick={()=>{}} />} />
+      <div style={{ flex:1, overflowY:'auto' }}>
+        {CONVERSATIONS.map(conv => (
+          <div key={conv.id}
+            onClick={() => navigate('chat-detail', conv)}
+            style={{
+              display:'flex', alignItems:'center', gap:14,
+              padding:'14px 16px',
+              borderBottom:`1px solid ${C.border}`,
+              cursor:'pointer',
+            }}
+          >
+            <div style={{ position:'relative', flexShrink:0 }}>
+              <img
+                src={conv.user.photos[0]}
+                style={{ width:52, height:52, borderRadius:26, objectFit:'cover' }}
+              />
+              {conv.user.online && (
+                <div style={{
+                  position:'absolute', bottom:1, right:1,
+                  width:12, height:12, borderRadius:6,
+                  background:C.online, border:`2px solid ${C.bg}`,
+                }}/>
+              )}
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:3 }}>
+                <span style={{ fontSize:15, fontWeight:600, color:C.text }}>{conv.user.name}</span>
+                <span style={{ fontSize:11, color:C.text2 }}>{conv.time}</span>
+              </div>
+              <div style={{
+                fontSize:13, color: conv.unread > 0 ? C.text : C.text2,
+                fontWeight: conv.unread > 0 ? 500 : 400,
+                overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+              }}>{conv.lastMsg}</div>
+            </div>
+            {conv.unread > 0 && (
+              <div style={{
+                background:C.accent, borderRadius:10,
+                minWidth:20, height:20, padding:'0 6px',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:11, color:'#fff', fontWeight:600,
+              }}>{conv.unread}</div>
+            )}
+          </div>
+        ))}
+      </div>
+      <QuickExit onPress={onQuickExit} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// CHAT DETAIL
+// ─────────────────────────────────────────────
+function ChatDetailScreen({ conversation, navigate, onQuickExit }) {
+  const [msgs, setMsgs] = React.useState(MESSAGES);
+  const [input, setInput] = React.useState('');
+  const [showMenu, setShowMenu] = React.useState(false);
+  const [showSafetyBanner, setShowSafetyBanner] = React.useState(true);
+  const bottomRef = React.useRef(null);
+  const user = conversation?.user || USERS[0];
+
+  const send = () => {
+    if (!input.trim()) return;
+    setMsgs(m => [...m, { id:Date.now(), from:'me', text:input.trim(), time:'now' }]);
+    setInput('');
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior:'smooth' }), 50);
+  };
+
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.bg, overflow:'hidden' }}>
+      <Header
+        left={<IconBtn label="←" onClick={() => navigate('back')} />}
+        title={
+          <div style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}
+               onClick={() => navigate('profile-detail', user)}>
+            <img src={user.photos[0]} style={{ width:32, height:32, borderRadius:16, objectFit:'cover' }}/>
+            <div>
+              <div style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.1 }}>{user.name}</div>
+              <div style={{ fontSize:11, color:user.online?C.online:C.text2 }}>
+                {user.online ? '● Online' : 'Offline'}
+              </div>
+            </div>
+          </div>
+        }
+        right={<IconBtn label="⋯" onClick={() => setShowMenu(!showMenu)} />}
+      />
+
+      {/* 3-dot menu */}
+      {showMenu && (
+        <div style={{
+          position:'absolute', top:52, right:12, zIndex:500,
+          background:C.bg2, border:`1px solid ${C.border}`,
+          borderRadius:12, overflow:'hidden', minWidth:160,
+        }}>
+          {['View profile','Block user','Report user','Unmatch'].map(item => (
+            <button key={item} onClick={() => setShowMenu(false)} style={{
+              display:'block', width:'100%', textAlign:'left',
+              background:'none', border:'none', borderBottom:`1px solid ${C.border}`,
+              padding:'13px 16px', color: item.includes('Block')||item.includes('Report')?C.danger:C.text,
+              fontSize:14, cursor:'pointer',
+            }}>{item}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Safety banner (first message) */}
+      {showSafetyBanner && (
+        <div style={{
+          background:'rgba(139,94,140,0.15)', border:`1px solid ${C.mauve}`,
+          margin:'8px 12px', borderRadius:10,
+          padding:'10px 12px',
+          display:'flex', gap:10, alignItems:'flex-start',
+        }}>
+          <span>🛡</span>
+          <div style={{ flex:1 }}>
+            <div style={{ color:C.text, fontSize:12, fontWeight:600, marginBottom:2 }}>Safety tip</div>
+            <div style={{ color:C.text2, fontSize:11, lineHeight:1.5 }}>
+              Never share personal info. Meet in public first. Trust your gut.
+            </div>
+          </div>
+          <button onClick={() => setShowSafetyBanner(false)} style={{
+            background:'none', border:'none', color:C.text2, cursor:'pointer', fontSize:16, padding:0,
+          }}>✕</button>
+        </div>
+      )}
+
+      {/* Messages */}
+      <div style={{ flex:1, overflowY:'auto', padding:'8px 12px' }}>
+        {msgs.map(msg => (
+          <div key={msg.id} style={{
+            display:'flex', justifyContent: msg.from==='me'?'flex-end':'flex-start',
+            marginBottom:8,
+          }}>
+            <div style={{
+              maxWidth:'72%',
+              background: msg.from==='me'
+                ? `linear-gradient(135deg, ${C.accent}, ${C.mauve})`
+                : C.bgCard,
+              borderRadius: msg.from==='me' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+              padding:'10px 14px',
+              border: msg.from==='them' ? `1px solid ${C.border}` : 'none',
+            }}>
+              <div style={{ color:'#fff', fontSize:14, lineHeight:1.5 }}>{msg.text}</div>
+              <div style={{ color: msg.from==='me'?'rgba(255,255,255,0.6)':'#9E8FA0', fontSize:10, marginTop:4, textAlign:'right' }}>
+                {msg.time}
+              </div>
+            </div>
+          </div>
+        ))}
+        <div ref={bottomRef}/>
+      </div>
+
+      {/* Input */}
+      <div style={{
+        display:'flex', alignItems:'center', gap:10,
+        padding:'10px 12px',
+        background:C.bg2, borderTop:`1px solid ${C.border}`,
+      }}>
+        <button style={{
+          background:C.bgCard, border:`1px solid ${C.border}`,
+          borderRadius:20, width:36, height:36, cursor:'pointer',
+          color:C.text2, fontSize:18, flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>📷</button>
+        <input
+          value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key==='Enter' && send()}
+          placeholder="Message..."
+          style={{
+            flex:1, background:C.bgCard, border:`1px solid ${C.border}`,
+            borderRadius:20, padding:'10px 16px',
+            color:C.text, fontSize:14, outline:'none', fontFamily:'inherit',
+          }}
+        />
+        <button onClick={send} style={{
+          background: input.trim() ? `linear-gradient(135deg,${C.accent},${C.mauve})` : C.bgCard,
+          border: input.trim() ? 'none' : `1px solid ${C.border}`,
+          borderRadius:20, width:36, height:36, cursor:'pointer',
+          color: input.trim() ? '#fff' : C.text2, fontSize:18, flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          transition:'background 0.2s',
+        }}>↑</button>
+      </div>
+      <QuickExit onPress={onQuickExit} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MY PROFILE
+// ─────────────────────────────────────────────
+function MyProfileScreen({ onQuickExit }) {
+  const [editMode, setEditMode] = React.useState(false);
+  const [bio, setBio] = React.useState(ME.bio);
+  const [name, setName] = React.useState(ME.name);
+  const [incognito, setIncognito] = React.useState(false);
+  const [hideProfile, setHideProfile] = React.useState(false);
+  const [exactDist, setExactDist] = React.useState(false);
+  const allIdentity = ['Lesbian','Bisexual','Queer','Pansexual','Sapphic','Non-binary','Trans woman','Femme','Butch','Stud','Soft butch','Chapstick'];
+  const allLooking = ['Hookup','Dating','Friends','Long-term','Casual','Open to anything'];
+  const [selIdentity, setSelIdentity] = React.useState(ME.identity);
+  const [selLooking, setSelLooking] = React.useState(ME.looking);
+
+  const toggleId = (t) => setSelIdentity(s => s.includes(t) ? s.filter(x=>x!==t) : [...s, t]);
+  const toggleLk = (t) => setSelLooking(s => s.includes(t) ? s.filter(x=>x!==t) : [...s, t]);
+
+  const Toggle = ({ value, onToggle }) => (
+    <div onClick={onToggle} style={{
+      width:44, height:24, borderRadius:12, cursor:'pointer',
+      background: value ? C.accent : C.border,
+      position:'relative', transition:'background 0.2s',
+    }}>
+      <div style={{
+        position:'absolute', top:2, left: value ? 22 : 2,
+        width:20, height:20, borderRadius:10, background:'#fff',
+        transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.3)',
+      }}/>
+    </div>
+  );
+
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.bg, overflow:'hidden' }}>
+      <Header
+        title="My Profile"
+        right={
+          <button onClick={() => setEditMode(!editMode)} style={{
+            background: editMode ? `linear-gradient(135deg,${C.accent},${C.mauve})` : 'none',
+            border: editMode ? 'none' : `1px solid ${C.border}`,
+            borderRadius:20, padding:'6px 14px',
+            color: editMode ? '#fff' : C.text2, fontSize:13, cursor:'pointer',
+          }}>{editMode ? 'Save' : 'Edit'}</button>
+        }
+      />
+
+      <div style={{ flex:1, overflowY:'auto', padding:'0 0 20px' }}>
+        {/* Photos */}
+        <div style={{ padding:'16px 16px 0', display:'flex', gap:8 }}>
+          {ME.photos.map((p, i) => (
+            <div key={i} style={{
+              width:100, height:120, borderRadius:12, overflow:'hidden',
+              position:'relative', border:`2px solid ${i===0?C.accent:C.border}`,
+              flexShrink:0, cursor:'pointer',
+            }}>
+              <img src={p} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+              {i===0 && (
+                <div style={{
+                  position:'absolute', bottom:4, left:0, right:0, textAlign:'center',
+                  fontSize:9, fontWeight:600, color:'#fff',
+                  background:'rgba(194,82,122,0.7)', padding:'2px 0',
+                }}>MAIN</div>
+              )}
+              {editMode && (
+                <div style={{
+                  position:'absolute', top:4, right:4,
+                  width:20, height:20, borderRadius:10,
+                  background:'rgba(0,0,0,0.6)', display:'flex',
+                  alignItems:'center', justifyContent:'center',
+                  fontSize:12, color:'#fff', cursor:'pointer',
+                }}>✕</div>
+              )}
+            </div>
+          ))}
+          {editMode && ME.photos.length < 5 && (
+            <div style={{
+              width:100, height:120, borderRadius:12,
+              border:`2px dashed ${C.border}`,
+              display:'flex', flexDirection:'column', alignItems:'center',
+              justifyContent:'center', cursor:'pointer', gap:4,
+              flexShrink:0,
+            }}>
+              <span style={{ fontSize:24, color:C.text2 }}>+</span>
+              <span style={{ fontSize:11, color:C.text2 }}>Add photo</span>
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding:'16px 16px 0', display:'flex', flexDirection:'column', gap:14 }}>
+          {/* Name + Age */}
+          <div style={{ display:'flex', gap:10 }}>
+            <div style={{ flex:2 }}>
+              <div style={{ ...S.label, marginBottom:6 }}>Display Name</div>
+              {editMode ? (
+                <input value={name} onChange={e=>setName(e.target.value)} style={{
+                  background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10,
+                  padding:'10px 12px', color:C.text, fontSize:15, width:'100%', outline:'none', fontFamily:'inherit',
+                }}/>
+              ) : (
+                <div style={{ color:C.text, fontSize:16, fontWeight:600 }}>{name}, {ME.age}</div>
+              )}
+            </div>
+            {ME.verified ? (
+              <div style={{ alignSelf:'flex-end' }}><GradientBadge>✓ Verified</GradientBadge></div>
+            ) : (
+              <button style={{
+                alignSelf:'flex-end', background:'none',
+                border:`1px solid ${C.accent}`, borderRadius:20,
+                padding:'6px 12px', color:C.accent, fontSize:12, cursor:'pointer',
+              }}>Get verified</button>
+            )}
+          </div>
+
+          {/* Bio */}
+          <div>
+            <div style={{ ...S.label, marginBottom:6 }}>Bio</div>
+            {editMode ? (
+              <textarea value={bio} onChange={e=>setBio(e.target.value)} rows={3} style={{
+                background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10,
+                padding:'10px 12px', color:C.text, fontSize:14, width:'100%',
+                outline:'none', resize:'none', fontFamily:'inherit', lineHeight:1.5,
+              }}/>
+            ) : (
+              <div style={{ color:C.text, fontSize:14, lineHeight:1.6 }}>{bio}</div>
+            )}
+          </div>
+
+          {/* Identity tags */}
+          <div>
+            <div style={{ ...S.label, marginBottom:8 }}>Identity</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+              {allIdentity.map(t => (
+                <button key={t} onClick={() => editMode && toggleId(t)} style={{
+                  background: selIdentity.includes(t) ? 'rgba(139,94,140,0.2)' : 'none',
+                  border: `1px solid ${selIdentity.includes(t)?C.mauve:C.border}`,
+                  borderRadius:20, padding:'6px 14px',
+                  color: selIdentity.includes(t)?C.mauve:C.text2,
+                  fontSize:12, cursor: editMode?'pointer':'default',
+                }}>{t}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Looking for */}
+          <div>
+            <div style={{ ...S.label, marginBottom:8 }}>Looking for</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+              {allLooking.map(t => (
+                <button key={t} onClick={() => editMode && toggleLk(t)} style={{
+                  background: selLooking.includes(t) ? 'rgba(194,82,122,0.2)' : 'none',
+                  border: `1px solid ${selLooking.includes(t)?C.accent:C.border}`,
+                  borderRadius:20, padding:'6px 14px',
+                  color: selLooking.includes(t)?C.accent:C.text2,
+                  fontSize:12, cursor: editMode?'pointer':'default',
+                }}>{t}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Privacy toggles */}
+          <div style={{ background:C.bgCard, borderRadius:12, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+            <div style={{ ...S.label, padding:'12px 16px 4px' }}>Privacy</div>
+            {[
+              { label:'Incognito mode', sub:'Hide from grid unless you like them first', val:incognito, set:setIncognito },
+              { label:'Hide my profile', sub:'Completely invisible to other users', val:hideProfile, set:setHideProfile },
+              { label:'Show exact distance', sub:'Off = distance is fuzzed ±0.5 km', val:exactDist, set:setExactDist },
+            ].map(({ label, sub, val, set }) => (
+              <div key={label} style={{
+                display:'flex', alignItems:'center', justifyContent:'space-between',
+                padding:'12px 16px', borderTop:`1px solid ${C.border}`,
+              }}>
+                <div>
+                  <div style={{ color:C.text, fontSize:14 }}>{label}</div>
+                  <div style={{ color:C.text2, fontSize:11, marginTop:2 }}>{sub}</div>
+                </div>
+                <Toggle value={val} onToggle={() => set(!val)}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <QuickExit onPress={onQuickExit} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SETTINGS / SAFETY
+// ─────────────────────────────────────────────
+function SettingsScreen({ navigate, onQuickExit, onSignOut }) {
+  const [showBlockList, setShowBlockList] = React.useState(false);
+  const [showVerify, setShowVerify] = React.useState(false);
+  const [notif, setNotif] = React.useState({ messages:true, likes:true, matches:true, safety:true });
+  const blockedUsers = [USERS[5], USERS[9]];
+
+  const Toggle = ({ value, onToggle }) => (
+    <div onClick={onToggle} style={{
+      width:44, height:24, borderRadius:12, cursor:'pointer',
+      background: value ? C.accent : C.border,
+      position:'relative', transition:'background 0.2s',
+    }}>
+      <div style={{
+        position:'absolute', top:2, left: value ? 22 : 2,
+        width:20, height:20, borderRadius:10, background:'#fff',
+        transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.3)',
+      }}/>
+    </div>
+  );
+
+  if (showVerify) return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.bg, overflow:'hidden' }}>
+      <Header
+        left={<IconBtn label="←" onClick={() => setShowVerify(false)} />}
+        title="Photo Verification"
+      />
+      <div style={{ flex:1, overflowY:'auto', padding:24, display:'flex', flexDirection:'column', gap:20, alignItems:'center' }}>
+        <div style={{ ...S.heading, textAlign:'center' }}>Verify your identity</div>
+        <div style={{ color:C.text2, fontSize:14, textAlign:'center', lineHeight:1.6 }}>
+          Take a selfie matching the pose shown below to confirm you're a real person.
+        </div>
+        {/* Pose reference */}
+        <div style={{
+          width:180, height:220, borderRadius:16,
+          border:`2px dashed ${C.mauve}`,
+          display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+          gap:12, background:'rgba(139,94,140,0.05)',
+        }}>
+          <div style={{ fontSize:64 }}>🤳</div>
+          <div style={{ color:C.mauve, fontSize:13, fontWeight:500, textAlign:'center', padding:'0 16px' }}>
+            Hold your right hand up with two fingers
+          </div>
+        </div>
+        <div style={{
+          background:C.bgCard, borderRadius:12, border:`1px solid ${C.border}`,
+          padding:16, width:'100%',
+        }}>
+          {['Face clearly visible','Good lighting','Match the pose','No filters or masks'].map(s => (
+            <div key={s} style={{ display:'flex', alignItems:'center', gap:10, paddingBlock:6 }}>
+              <span style={{ color:C.online, fontSize:16 }}>✓</span>
+              <span style={{ color:C.text, fontSize:13 }}>{s}</span>
+            </div>
+          ))}
+        </div>
+        <button style={{
+          background:`linear-gradient(135deg,${C.accent},${C.mauve})`,
+          border:'none', borderRadius:24, padding:'16px 48px',
+          color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer',
+          boxShadow:`0 4px 16px rgba(194,82,122,0.3)`, width:'100%',
+        }}>📷 Take Verification Selfie</button>
+      </div>
+    </div>
+  );
+
+  if (showBlockList) return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.bg, overflow:'hidden' }}>
+      <Header
+        left={<IconBtn label="←" onClick={() => setShowBlockList(false)} />}
+        title="Blocked Users"
+      />
+      <div style={{ flex:1, overflowY:'auto' }}>
+        {blockedUsers.length === 0 ? (
+          <div style={{ textAlign:'center', padding:48, color:C.text2 }}>No blocked users</div>
+        ) : blockedUsers.map(u => (
+          <div key={u.id} style={{
+            display:'flex', alignItems:'center', gap:14,
+            padding:'14px 16px', borderBottom:`1px solid ${C.border}`,
+          }}>
+            <img src={u.photos[0]} style={{ width:44, height:44, borderRadius:22, objectFit:'cover' }}/>
+            <div style={{ flex:1 }}>
+              <div style={{ color:C.text, fontSize:15, fontWeight:600 }}>{u.name}</div>
+              <div style={{ color:C.text2, fontSize:12 }}>Blocked</div>
+            </div>
+            <button style={{
+              background:'none', border:`1px solid ${C.border}`,
+              borderRadius:20, padding:'6px 14px',
+              color:C.text2, fontSize:12, cursor:'pointer',
+            }}>Unblock</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', background:C.bg, overflow:'hidden' }}>
+      <Header title="Safety & Settings" />
+
+      <div style={{ flex:1, overflowY:'auto', padding:'0 0 24px' }}>
+        {/* Quick exit — prominent */}
+        <div style={{ padding:16 }}>
+          <button style={{
+            width:'100%', background:C.danger, border:'none', borderRadius:16,
+            padding:'18px 0', cursor:'pointer',
+            display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+            boxShadow:`0 4px 20px rgba(224,92,92,0.4)`,
+          }}>
+            <span style={{ fontSize:20 }}>🚪</span>
+            <div style={{ textAlign:'left' }}>
+              <div style={{ color:'#fff', fontSize:15, fontWeight:700 }}>Quick Exit</div>
+              <div style={{ color:'rgba(255,255,255,0.7)', fontSize:11 }}>Immediately close app</div>
+            </div>
+          </button>
+        </div>
+
+        {/* Verification */}
+        <Section title="Account">
+          <SettingRow label="Photo Verification" sub="Get the verified badge" right={
+            <button onClick={() => setShowVerify(true)} style={{
+              background:`linear-gradient(135deg,${C.accent},${C.mauve})`,
+              border:'none', borderRadius:20, padding:'6px 14px',
+              color:'#fff', fontSize:12, cursor:'pointer',
+            }}>Verify</button>
+          }/>
+          <SettingRow label="Blocked users" sub={`${blockedUsers.length} blocked`} right={
+            <button onClick={() => setShowBlockList(true)} style={{
+              background:'none', border:`1px solid ${C.border}`,
+              borderRadius:20, padding:'6px 14px',
+              color:C.text2, fontSize:12, cursor:'pointer',
+            }}>Manage</button>
+          }/>
+        </Section>
+
+        {/* Notifications */}
+        <Section title="Notifications">
+          {[
+            { k:'messages', label:'New messages' },
+            { k:'likes', label:'Someone likes you' },
+            { k:'matches', label:'New matches' },
+            { k:'safety', label:'Safety alerts' },
+          ].map(({ k, label }) => (
+            <SettingRow key={k} label={label} right={
+              <Toggle value={notif[k]} onToggle={() => setNotif(n => ({ ...n, [k]:!n[k] }))}/>
+            }/>
+          ))}
+        </Section>
+
+        {/* Safety resources */}
+        <Section title="Safety Resources">
+          {[
+            { icon:'📞', label:'Crisis Text Line', sub:'Text HOME to 741741' },
+            { icon:'🏳️‍🌈', label:'Trevor Project', sub:'24/7 LGBTQ+ crisis support' },
+            { icon:'⚖️', label:'Community Guidelines', sub:'What we stand for' },
+            { icon:'🔒', label:'Privacy Policy', sub:'How we protect your data' },
+          ].map(({ icon, label, sub }) => (
+            <div key={label} style={{
+              display:'flex', alignItems:'center', gap:14,
+              padding:'13px 16px', borderBottom:`1px solid ${C.border}`, cursor:'pointer',
+            }}>
+              <span style={{ fontSize:20 }}>{icon}</span>
+              <div style={{ flex:1 }}>
+                <div style={{ color:C.text, fontSize:14 }}>{label}</div>
+                {sub && <div style={{ color:C.text2, fontSize:11, marginTop:2 }}>{sub}</div>}
+              </div>
+              <span style={{ color:C.text2 }}>›</span>
+            </div>
+          ))}
+        </Section>
+
+        <div style={{ padding:'16px 16px 0' }}>
+          <button onClick={onSignOut} style={{
+            width:'100%', background:'none',
+            border:`1px solid ${C.danger}30`,
+            borderRadius:16, padding:'14px 0',
+            color:C.danger, fontSize:14, cursor:'pointer',
+          }}>Sign Out</button>
+        </div>
+      </div>
+
+      <QuickExit onPress={onQuickExit} />
+    </div>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div style={{ marginBottom:8 }}>
+      <div style={{ ...S.label, padding:'12px 16px 6px' }}>{title}</div>
+      <div style={{ background:C.bgCard, borderTop:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}` }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SettingRow({ label, sub, right }) {
+  return (
+    <div style={{
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      padding:'13px 16px', borderBottom:`1px solid ${C.border}`,
+    }}>
+      <div>
+        <div style={{ color:C.text, fontSize:14 }}>{label}</div>
+        {sub && <div style={{ color:C.text2, fontSize:11, marginTop:2 }}>{sub}</div>}
+      </div>
+      {right}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// QUICK EXIT MODAL
+// ─────────────────────────────────────────────
+function QuickExitOverlay({ onClose }) {
+  return (
+    <div style={{
+      position:'absolute', inset:0, background:'#0D0D0F', zIndex:9999,
+      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+      gap:20, padding:32,
+    }}>
+      <div style={{ fontSize:48 }}>🔒</div>
+      <div style={{ ...S.heading, textAlign:'center' }}>App Hidden</div>
+      <div style={{ color:C.text2, fontSize:14, textAlign:'center', lineHeight:1.6 }}>
+        SZR is not visible to anyone nearby. Tap below to return.
+      </div>
+      <button onClick={onClose} style={{
+        background:`linear-gradient(135deg,${C.accent},${C.mauve})`,
+        border:'none', borderRadius:24, padding:'14px 40px',
+        color:'#fff', fontSize:15, fontWeight:600, cursor:'pointer',
+      }}>Return to SZR</button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// ROOT APP
+// ─────────────────────────────────────────────
+function App() {
+  const [screen, setScreen] = React.useState('agegate');
+  const [activeTab, setActiveTab] = React.useState('grid');
+  const [selectedUser, setSelectedUser] = React.useState(null);
+  const [selectedConversation, setSelectedConversation] = React.useState(null);
+  const [quickExitVisible, setQuickExitVisible] = React.useState(false);
+  const [prevScreen, setPrevScreen] = React.useState(null);
+
+  const navigate = (to, data=null) => {
+    if (to === 'back') {
+      setScreen(prevScreen || 'grid');
+      return;
+    }
+    setPrevScreen(screen);
+    if (to === 'profile-detail') { setSelectedUser(data); setScreen('profile-detail'); return; }
+    if (to === 'chat-detail') { setSelectedConversation(data); setScreen('chat-detail'); return; }
+    setScreen(to);
+  };
+
+  const handleChat = (user) => {
+    const conv = CONVERSATIONS.find(c => c.user.id === user.id) || { id:99, user, lastMsg:'', time:'now', unread:0 };
+    setSelectedConversation(conv);
+    setScreen('chat-detail');
+  };
+
+  const onTab = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'grid') setScreen('grid');
+    if (tab === 'chats') setScreen('chats');
+    if (tab === 'profile') setScreen('my-profile');
+    if (tab === 'settings') setScreen('settings');
+  };
+
+  const showTabs = ['grid','chats','my-profile','settings'].includes(screen);
+
+  const quickExit = () => setQuickExitVisible(true);
+
+  return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100%', position:'relative', overflow:'hidden' }}>
+      {quickExitVisible && <QuickExitOverlay onClose={() => setQuickExitVisible(false)} />}
+
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        {screen === 'agegate'      && <AgeGateScreen navigate={navigate} />}
+        {screen === 'login'        && <LoginScreen navigate={navigate} />}
+        {screen === 'signup'       && <SignupScreen navigate={navigate} />}
+        {screen === 'grid'         && <GridScreen navigate={navigate} onQuickExit={quickExit} />}
+        {screen === 'profile-detail' && <ProfileDetailScreen user={selectedUser} navigate={navigate} onChat={handleChat} />}
+        {screen === 'chats'        && <ChatListScreen navigate={navigate} onQuickExit={quickExit} />}
+        {screen === 'chat-detail'  && <ChatDetailScreen conversation={selectedConversation} navigate={navigate} onQuickExit={quickExit} />}
+        {screen === 'my-profile'   && <MyProfileScreen onQuickExit={quickExit} />}
+        {screen === 'settings'     && <SettingsScreen navigate={navigate} onQuickExit={quickExit} onSignOut={() => setScreen('login')} />}
+      </div>
+
+      {showTabs && (
+        <BottomTabs active={activeTab} onTab={onTab} />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
