@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SZR — Prototype</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:#111;min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;padding:24px 0 48px;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+::-webkit-scrollbar{display:none}
+
+.lbl{color:#444;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;text-align:center}
+
+.shell{
+  width:390px;height:844px;
+  background:#0D0D0F;border-radius:44px;
+  border:8px solid #2a2a2a;
+  box-shadow:0 0 0 2px #1a1a1a,0 40px 80px rgba(0,0,0,.85),inset 0 0 0 1px #333;
+  position:relative;overflow:hidden;display:flex;flex-direction:column;
+}
+.notch{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:126px;height:34px;background:#1a1a1a;border-radius:0 0 20px 20px;z-index:999;
+}
+#app{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  margin-top:34px;position:relative;
+}
+
+.screen{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#0D0D0F}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+.hdr{
+  display:flex;align-items:center;height:52px;padding:0 16px;
+  background:#0D0D0F;border-bottom:1px solid #2E2832;flex-shrink:0;position:relative;
+}
+.hdr-title{flex:1;text-align:center;font-size:17px;font-weight:600;color:#F5F0F2}
+.hdr-left{position:absolute;left:12px}
+.hdr-right{position:absolute;right:12px}
+
+.tabs{
+  display:flex;height:64px;background:#1A1A1F;
+  border-top:1px solid #2E2832;flex-shrink:0;
+}
+.tab{
+  flex:1;border:none;background:none;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:#9E8FA0;font-size:10px;font-weight:500;font-family:inherit;transition:color .15s;
+}
+.tab.active,.tab:hover{color:#C2527A}
+.tab-icon{font-size:22px;line-height:1}
+
+.btn-grad{
+  border:none;border-radius:24px;padding:14px 0;
+  background:linear-gradient(135deg,#C2527A,#8B5E8C);
+  color:#fff;font-size:15px;font-weight:600;cursor:pointer;
+  font-family:inherit;width:100%;
+  box-shadow:0 4px 16px rgba(194,82,122,.3);
+}
+.btn-outline{
+  border:1px solid #2E2832;border-radius:24px;padding:14px 0;
+  background:none;color:#9E8FA0;font-size:15px;cursor:pointer;
+  font-family:inherit;width:100%;
+}
+.btn-icon{
+  background:none;border:none;cursor:pointer;color:#9E8FA0;
+  font-size:20px;padding:6px;display:flex;align-items:center;justify-content:center;
+  font-family:inherit;
+}
+
+input,textarea{
+  background:#222228;border:1px solid #2E2832;border-radius:12px;
+  padding:14px 16px;color:#F5F0F2;font-size:15px;width:100%;
+  outline:none;font-family:inherit;
+}
+textarea{resize:none;line-height:1.5}
+input::placeholder,textarea::placeholder{color:#9E8FA0}
+
+.pill-mauve{
+  background:rgba(139,94,140,.2);border:1px solid #8B5E8C;
+  color:#8B5E8C;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;
+}
+.pill-rose{
+  background:rgba(194,82,122,.2);border:1px solid #C2527A;
+  color:#C2527A;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;
+}
+.pill-btn{
+  border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;
+  font-family:inherit;border:1px solid #2E2832;background:none;color:#9E8FA0;
+  transition:all .15s;
+}
+.pill-btn.sel-mauve{background:rgba(139,94,140,.2);border-color:#8B5E8C;color:#8B5E8C}
+.pill-btn.sel-rose{background:rgba(194,82,122,.2);border-color:#C2527A;color:#C2527A}
+
+.toggle{width:44px;height:24px;border-radius:12px;background:#2E2832;position:relative;cursor:pointer;transition:background .2s;border:none;flex-shrink:0}
+.toggle.on{background:#C2527A}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:10px;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.toggle.on::after{left:22px}
+
+.card{background:#222228;border-radius:12px;border:1px solid #2E2832}
+.sec-label{font-size:12px;font-weight:500;color:#9E8FA0;text-transform:uppercase;letter-spacing:1px;padding:12px 16px 6px}
+
+.quick-exit{
+  position:absolute;bottom:76px;right:14px;z-index:800;
+  width:48px;height:48px;border-radius:24px;background:#E05C5C;
+  border:none;cursor:pointer;font-size:18px;color:#fff;
+  box-shadow:0 4px 16px rgba(224,92,92,.5);
+  display:flex;align-items:center;justify-content:center;
+}
+
+.logo-box{
+  width:96px;height:96px;border-radius:20px;
+  background:linear-gradient(135deg,#C2527A,#8B5E8C);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 32px rgba(194,82,122,.35);
+}
+.logo-text{font-size:28px;font-weight:700;color:#fff;letter-spacing:4px}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px}
+.tile{position:relative;aspect-ratio:1/1.1;border-radius:10px;overflow:hidden;cursor:pointer}
+.tile img{width:100%;height:100%;object-fit:cover;display:block}
+.tile-grad{position:absolute;bottom:0;left:0;right:0;height:60%;background:linear-gradient(to top,rgba(0,0,0,.85),transparent)}
+.tile-name{position:absolute;bottom:6px;left:7px;color:#fff;font-size:11px;font-weight:600;line-height:1.2}
+.tile-dist{font-size:9px;color:rgba(255,255,255,.7)}
+.tile-online{position:absolute;top:6px;left:6px;width:9px;height:9px;border-radius:5px;background:#4CAF50;border:2px solid #0D0D0F;box-shadow:0 0 6px rgba(76,175,80,.6)}
+.tile-verified{position:absolute;top:5px;right:5px;background:linear-gradient(135deg,#C2527A,#8B5E8C);border-radius:9px;padding:2px 5px;font-size:9px;color:#fff;font-weight:600}
+
+.bubble-me{background:linear-gradient(135deg,#C2527A,#8B5E8C);border-radius:18px 18px 4px 18px}
+.bubble-them{background:#222228;border:1px solid #2E2832;border-radius:18px 18px 18px 4px}
+
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,.75);z-index:700;display:flex;align-items:flex-end}
+.sheet{background:#1A1A1F;border-radius:20px 20px 0 0;padding:24px;width:100%;border:1px solid #2E2832}
+
+.badge-grad{
+  background:linear-gradient(135deg,#C2527A,#8B5E8C);
+  border-radius:20px;padding:3px 9px;font-size:11px;font-weight:600;color:#fff;
+  display:inline-flex;align-items:center;gap:3px;
+}
+</style>
+</head>
+<body>
+<div class="lbl">SZR — Interactive Prototype</div>
+<div class="shell">
+  <div class="notch"></div>
+  <div id="app"></div>
+</div>
+
+<script>
+const C={bg:'#0D0D0F',bg2:'#1A1A1F',bgCard:'#222228',accent:'#C2527A',mauve:'#8B5E8C',text:'#F5F0F2',text2:'#9E8FA0',border:'#2E2832',danger:'#E05C5C',online:'#4CAF50'};
+
+const USERS=[
+  {id:1,name:'Zara',age:26,dist:'0.3 km',online:true,verified:true,identity:['Lesbian','Femme'],looking:['Dating','Hookup'],bio:'Coffee shops, vinyl records, and dogs that are way too big for apartments. Looking for someone to make Sunday mornings chaotic.',photos:['https://picsum.photos/seed/zara1/400/500','https://picsum.photos/seed/zara2/400/500','https://picsum.photos/seed/zara3/400/500']},
+  {id:2,name:'Mia',age:24,dist:'0.8 km',online:true,verified:true,identity:['Bisexual','Soft butch'],looking:['Casual','Open to anything'],bio:'Gemini sun, Scorpio rising. I make pottery and bad decisions. Very into you already.',photos:['https://picsum.photos/seed/mia1/400/500','https://picsum.photos/seed/mia2/400/500']},
+  {id:3,name:'Rowan',age:29,dist:'1.2 km',online:false,verified:true,identity:['Queer','Non-binary'],looking:['Long-term','Friends'],bio:'Librarian by day, chaotic home cook by night. I will feed you.',photos:['https://picsum.photos/seed/rowan1/400/500','https://picsum.photos/seed/rowan2/400/500']},
+  {id:4,name:'Sasha',age:27,dist:'1.5 km',online:true,verified:false,identity:['Sapphic'],looking:['Hookup','Casual'],bio:'Aquarius. Climbing gyms and late-night drives.',photos:['https://picsum.photos/seed/sasha1/400/500']},
+  {id:5,name:'Evie',age:23,dist:'2.0 km',online:true,verified:true,identity:['Lesbian','Butch'],looking:['Dating'],bio:'UX designer. Probably thinking about typography right now.',photos:['https://picsum.photos/seed/evie1/400/500','https://picsum.photos/seed/evie2/400/500']},
+  {id:6,name:'Luna',age:31,dist:'2.4 km',online:false,verified:true,identity:['Pansexual'],looking:['Open to anything'],bio:'Musician. Night owl. Professional overthinker who somehow never misses a show.',photos:['https://picsum.photos/seed/luna1/400/500']},
+  {id:7,name:'Billie',age:25,dist:'3.1 km',online:true,verified:false,identity:['Lesbian','Chapstick'],looking:['Hookup','Casual'],bio:'Nurse. I know where all the pressure points are. Just saying.',photos:['https://picsum.photos/seed/billie1/400/500','https://picsum.photos/seed/billie2/400/500']},
+  {id:8,name:'Cleo',age:28,dist:'3.5 km',online:false,verified:true,identity:['Queer','Trans woman'],looking:['Dating','Long-term'],bio:'Tattooed, bookmarked, caffeinated. Looking for someone who argues about movies.',photos:['https://picsum.photos/seed/cleo1/400/500']},
+  {id:9,name:'Indigo',age:22,dist:'3.9 km',online:true,verified:true,identity:['Bisexual','Femme'],looking:['Friends','Open to anything'],bio:'Art student. Everything is a moodboard. You are a moodboard.',photos:['https://picsum.photos/seed/indigo1/400/500','https://picsum.photos/seed/indigo2/400/500']},
+  {id:10,name:'Kai',age:33,dist:'4.2 km',online:false,verified:true,identity:['Sapphic','Stud'],looking:['Dating','Hookup'],bio:'Architect. I design spaces for living, not just looking.',photos:['https://picsum.photos/seed/kai1/400/500']},
+  {id:11,name:'Petra',age:30,dist:'4.8 km',online:true,verified:false,identity:['Lesbian'],looking:['Long-term'],bio:'Dog mom x2. Brunch is a personality.',photos:['https://picsum.photos/seed/petra1/400/500','https://picsum.photos/seed/petra2/400/500']},
+  {id:12,name:'Wren',age:26,dist:'5.6 km',online:true,verified:true,identity:['Queer','Non-binary'],looking:['Casual','Hookup'],bio:'Spent last summer busking in Barcelona. Back now. Looking for adventures smaller than that.',photos:['https://picsum.photos/seed/wren1/400/500']},
+];
+const CONVOS=[
+  {id:1,user:USERS[0],last:'are you free tomorrow night?',time:'now',unread:2},
+  {id:2,user:USERS[4],last:'ok that place sounds perfect 🌹',time:'2m',unread:0},
+  {id:3,user:USERS[1],last:'you: haha ok deal',time:'1h',unread:0},
+  {id:4,user:USERS[7],last:"let me know when you're around",time:'3h',unread:1},
+];
+const INIT_MSGS=[
+  {id:1,from:'them',text:'hey, saw your profile 👋',time:'2:10 PM'},
+  {id:2,from:'me',text:'hi! love your photos',time:'2:12 PM'},
+  {id:3,from:'them',text:'thank you!! coffee sometime?',time:'2:13 PM'},
+  {id:4,from:'me',text:'absolutely, yes',time:'2:14 PM'},
+  {id:5,from:'them',text:'are you free tomorrow night?',time:'2:15 PM'},
+];
+const ME={name:'Alex',age:27,bio:"Photographer + dog enthusiast. I take pictures of things I love.",identity:['Bisexual','Femme'],looking:['Dating','Open to anything'],photos:['https://picsum.photos/seed/alex1/400/500','https://picsum.photos/seed/alex2/400/500']};
+const ALL_IDENTITY=['Lesbian','Bisexual','Queer','Pansexual','Sapphic','Non-binary','Trans woman','Femme','Butch','Stud','Soft butch','Chapstick'];
+const ALL_LOOKING=['Hookup','Dating','Friends','Long-term','Casual','Open to anything'];
+
+const state={
+  screen:'agegate',prevScreen:'grid',tab:'grid',ageDenied:false,
+  selectedUser:null,selectedConvo:null,photoIdx:0,bioExpanded:false,liked:false,
+  showReport:false,showFilter:false,showMenu:false,showSafetyBanner:true,
+  messages:[...INIT_MSGS],chatInput:'',editMode:false,
+  myBio:ME.bio,myName:ME.name,myIdentity:[...ME.identity],myLooking:[...ME.looking],
+  incognito:false,hideProfile:false,exactDist:false,
+  notif:{messages:true,likes:true,matches:true,safety:true},
+  showBlockList:false,showVerify:false,quickExit:false,
+};
+
+function go(screen,data={}){
+  state.prevScreen=state.screen;
+  if(screen==='back'){state.screen=state.prevScreen;return render()}
+  Object.assign(state,data,{screen,showReport:false,showMenu:false,showFilter:false});
+  if(['grid','chats','my-profile','settings'].includes(screen)){
+    state.tab={grid:'grid',chats:'chats','my-profile':'profile',settings:'settings'}[screen]||state.tab;
+  }
+  render();
+}
+
+function render(){
+  const app=document.getElementById('app');
+  const showTabs=['grid','chats','my-profile','settings'].includes(state.screen);
+  app.innerHTML=`
+    ${state.quickExit?quickExitOverlay():''}
+    <div class="screen">${screenHTML()}</div>
+    ${showTabs?tabsHTML():''}
+  `;
+  attachListeners();
+}
+
+function screenHTML(){
+  switch(state.screen){
+    case'agegate':return ageGate();
+    case'login':return login();
+    case'signup':return signup();
+    case'grid':return grid();
+    case'profile-detail':return profileDetail();
+    case'chats':return chatList();
+    case'chat-detail':return chatDetail();
+    case'my-profile':return myProfile();
+    case'settings':return settings();
+    default:return'';
+  }
+}
+
+function ageGate(){
+  if(state.ageDenied) return `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:16px;height:100%">
+      <div style="font-size:48px">🚫</div>
+      <div style="font-size:20px;font-weight:600;color:#F5F0F2;text-align:center">Access Restricted</div>
+      <div style="font-size:15px;color:#9E8FA0;text-align:center">SZR is only available to users 18 and older.</div>
+    </div>`;
+  return `
+    <div class="scroll" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;min-height:100%;gap:0">
+      <div class="logo-box" style="margin-bottom:14px"><span class="logo-text">SZR</span></div>
+      <div style="color:#9E8FA0;font-size:13px;margin-bottom:36px;letter-spacing:.5px">For women who love women.</div>
+      <div class="card" style="padding:24px;width:100%;margin-bottom:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:20px;font-weight:600;color:#F5F0F2;text-align:center">Are you 18 or older?</div>
+        <div style="font-size:13px;color:#9E8FA0;text-align:center;line-height:1.6">SZR contains adult content and is strictly for users aged 18+.</div>
+        <button class="btn-grad" data-action="agegate-yes">Yes, I'm 18+</button>
+        <button class="btn-outline" data-action="agegate-no">No, I'm under 18</button>
+      </div>
+      <div style="font-size:11px;color:#9E8FA0;text-align:center;opacity:.5;line-height:1.6">By continuing you agree to our Terms of Service and Privacy Policy.</div>
+    </div>`;
+}
+
+function login(){
+  return `
+    <div class="scroll" style="display:flex;flex-direction:column;min-height:100%">
+      <div style="padding:48px 32px 24px;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div class="logo-box" style="width:72px;height:72px;border-radius:16px"><span class="logo-text" style="font-size:20px;letter-spacing:2px">SZR</span></div>
+        <div style="font-size:20px;font-weight:600;color:#F5F0F2;margin-top:8px">Welcome back</div>
+        <div style="font-size:14px;color:#9E8FA0">Sign in to your account</div>
+      </div>
+      <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px;flex:1">
+        <input type="email" placeholder="Email address"/>
+        <input type="password" placeholder="Password"/>
+        <button class="btn-grad" style="margin-top:6px" data-action="login">Sign In</button>
+        <div style="text-align:center;color:#9E8FA0;font-size:13px">
+          Don't have an account? <span style="color:#C2527A;cursor:pointer;font-weight:500" data-action="goto-signup">Create one</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+          <div style="flex:1;height:1px;background:#2E2832"></div>
+          <span style="color:#9E8FA0;font-size:12px">or</span>
+          <div style="flex:1;height:1px;background:#2E2832"></div>
+        </div>
+        <button class="btn-outline" data-action="login">🍎  Continue with Apple</button>
+        <button class="btn-outline" style="margin-bottom:32px" data-action="login">🌐  Continue with Google</button>
+      </div>
+    </div>`;
+}
+
+function signup(){
+  return `
+    <div class="scroll" style="display:flex;flex-direction:column;min-height:100%">
+      <div style="padding:32px 24px 0;display:flex;align-items:center;gap:12px">
+        <button class="btn-icon" data-action="back">←</button>
+        <div style="font-size:20px;font-weight:600;color:#F5F0F2">Create account</div>
+      </div>
+      <div style="padding:24px;display:flex;flex-direction:column;gap:12px">
+        <input type="email" placeholder="Email address"/>
+        <input type="password" placeholder="Password"/>
+        <input type="password" placeholder="Confirm password"/>
+        <input type="number" placeholder="Your age"/>
+        <div style="font-size:12px;color:#9E8FA0;line-height:1.6">
+          By creating an account you confirm you are 18+ and agree to our
+          <span style="color:#C2527A">Terms of Service</span> and <span style="color:#C2527A">Privacy Policy</span>.
+        </div>
+        <button class="btn-grad" style="margin-top:4px" data-action="login">Create Account</button>
+      </div>
+    </div>`;
+}
+
+function grid(){
+  const filterPanel=state.showFilter?`
+    <div style="background:#1A1A1F;border-bottom:1px solid #2E2832;padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:12px;font-weight:500;color:#9E8FA0;text-transform:uppercase;letter-spacing:1px">Filters</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${['Nearby','Online now','Verified','New faces'].map((f,i)=>`
+          <button style="background:${i===0?'linear-gradient(135deg,#C2527A,#8B5E8C)':'none'};border:1px solid ${i===0?'#C2527A':'#2E2832'};border-radius:20px;padding:6px 14px;color:${i===0?'#fff':'#9E8FA0'};font-size:12px;cursor:pointer;font-family:inherit">${f}</button>
+        `).join('')}
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <span style="color:#9E8FA0;font-size:13px">Max distance:</span>
+        <input type="range" min="1" max="50" value="10" style="flex:1;accent-color:#C2527A"/>
+        <span style="color:#F5F0F2;font-size:13px;width:36px">10 km</span>
+      </div>
+    </div>`:'';
+  const tiles=USERS.map(u=>`
+    <div class="tile" data-action="open-profile" data-uid="${u.id}">
+      <img src="${u.photos[0]}" loading="lazy" alt="${u.name}"/>
+      <div class="tile-grad"></div>
+      ${u.online?'<div class="tile-online"></div>':''}
+      ${u.verified?'<div class="tile-verified">✓</div>':''}
+      <div class="tile-name">${u.name}<br><span class="tile-dist">${u.dist}</span></div>
+    </div>`).join('');
+  return `
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+      <div class="hdr">
+        <div class="hdr-left"><button class="btn-icon" data-action="toggle-filter">⚙</button></div>
+        <div class="hdr-title" style="background:linear-gradient(135deg,#C2527A,#8B5E8C);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:22px;font-weight:700;letter-spacing:3px">SZR</div>
+        <div class="hdr-right"><button class="btn-icon">🔔</button></div>
+      </div>
+      ${filterPanel}
+      <div class="scroll"><div class="grid">${tiles}</div></div>
+      <button class="quick-exit" data-action="quick-exit">✕</button>
+    </div>`;
+}
+
+function profileDetail(){
+  const u=state.selectedUser;
+  if(!u)return'';
+  const dots=u.photos.length>1?u.photos.map((_,i)=>`
+    <button data-action="photo-dot" data-idx="${i}" style="width:${i===state.photoIdx?20:6}px;height:6px;border-radius:3px;background:${i===state.photoIdx?'#C2527A':'rgba(255,255,255,.4)'};border:none;cursor:pointer;padding:0;transition:width .2s"></button>
+  `).join(''):'';
+  const bio=state.bioExpanded||u.bio.length<80?u.bio:u.bio.slice(0,80)+'...';
+  return `
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+      <div style="position:relative;height:55%;flex-shrink:0">
+        <img src="${u.photos[state.photoIdx]}" style="width:100%;height:100%;object-fit:cover;display:block"/>
+        <div style="position:absolute;top:0;left:0;right:0;height:80px;background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent)"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:100px;background:linear-gradient(to top,#0D0D0F,transparent)"></div>
+        <button data-action="back" style="position:absolute;top:12px;left:12px;background:rgba(0,0,0,.5);border:none;border-radius:20px;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;font-family:inherit">←</button>
+        ${u.photos.length>1?`<div style="position:absolute;bottom:14px;left:0;right:0;display:flex;justify-content:center;gap:6px">${dots}</div>`:''}
+        ${u.photos.length>1?`
+          <div data-action="photo-prev" style="position:absolute;top:0;left:0;width:40%;height:100%;cursor:pointer"></div>
+          <div data-action="photo-next" style="position:absolute;top:0;right:0;width:40%;height:100%;cursor:pointer"></div>
+        `:''}
+      </div>
+      <div class="scroll" style="padding:0 16px 16px">
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 0 4px">
+          <span style="font-size:24px;font-weight:700;color:#F5F0F2">${u.name}</span>
+          <span style="color:#9E8FA0;font-size:18px">${u.age}</span>
+          ${u.verified?'<span class="badge-grad">✓ Verified</span>':''}
+          ${u.online?'<div style="display:flex;align-items:center;gap:4px;margin-left:auto"><div style="width:8px;height:8px;border-radius:4px;background:#4CAF50"></div><span style="color:#4CAF50;font-size:12px">Online</span></div>':''}
+        </div>
+        <div style="color:#9E8FA0;font-size:13px;margin-bottom:14px">📍 ${u.dist} away</div>
+        <div class="card" style="padding:14px;margin-bottom:14px">
+          <div style="color:#F5F0F2;font-size:14px;line-height:1.6">${bio}</div>
+          ${u.bio.length>80?`<button data-action="toggle-bio" style="background:none;border:none;color:#C2527A;font-size:13px;cursor:pointer;padding:6px 0 0;font-family:inherit">${state.bioExpanded?'Show less':'Read more'}</button>`:''}
+        </div>
+        <div style="font-size:12px;font-weight:500;color:#9E8FA0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Identity</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">${u.identity.map(t=>`<span class="pill-mauve">${t}</span>`).join('')}</div>
+        <div style="font-size:12px;font-weight:500;color:#9E8FA0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Looking for</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px">${u.looking.map(t=>`<span class="pill-rose">${t}</span>`).join('')}</div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="btn-grad" data-action="open-chat" style="flex:1">Message</button>
+          <button data-action="toggle-like" style="width:52px;height:52px;border-radius:26px;background:${state.liked?'rgba(194,82,122,.2)':'#222228'};border:1px solid ${state.liked?'#C2527A':'#2E2832'};cursor:pointer;font-size:22px;flex-shrink:0">${state.liked?'❤️':'🤍'}</button>
+          <button style="width:52px;height:52px;border-radius:26px;background:#222228;border:1px solid #2E2832;cursor:pointer;font-size:20px;flex-shrink:0">🚫</button>
+        </div>
+        <button data-action="show-report" style="background:none;border:none;color:#9E8FA0;font-size:13px;cursor:pointer;text-decoration:underline;display:block;margin:0 auto 8px;font-family:inherit">Report ${u.name}</button>
+      </div>
+      ${state.showReport?reportSheet(u):''}
+    </div>`;
+}
+
+function reportSheet(u){
+  return `
+    <div class="overlay" data-action="close-report">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div style="font-size:20px;font-weight:600;color:#F5F0F2;margin-bottom:4px">Report ${u.name}</div>
+        <div style="color:#9E8FA0;font-size:13px;margin-bottom:14px">Select the reason for reporting:</div>
+        ${['Fake profile','Harassment','Underage','Spam','Inappropriate content','Other'].map(r=>`
+          <button data-action="close-report" style="display:block;width:100%;text-align:left;background:#222228;border:1px solid #2E2832;border-radius:10px;padding:12px 16px;color:#F5F0F2;font-size:14px;cursor:pointer;margin-bottom:8px;font-family:inherit">${r}</button>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
+function chatList(){
+  const rows=CONVOS.map(c=>`
+    <div data-action="open-convo" data-cid="${c.id}" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid #2E2832;cursor:pointer">
+      <div style="position:relative;flex-shrink:0">
+        <img src="${c.user.photos[0]}" style="width:52px;height:52px;border-radius:26px;object-fit:cover"/>
+        ${c.user.online?'<div style="position:absolute;bottom:1px;right:1px;width:12px;height:12px;border-radius:6px;background:#4CAF50;border:2px solid #0D0D0F"></div>':''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="font-size:15px;font-weight:600;color:#F5F0F2">${c.user.name}</span>
+          <span style="font-size:11px;color:#9E8FA0">${c.time}</span>
+        </div>
+        <div style="font-size:13px;color:${c.unread>0?'#F5F0F2':'#9E8FA0'};font-weight:${c.unread>0?500:400};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.last}</div>
+      </div>
+      ${c.unread>0?`<div style="background:#C2527A;border-radius:10px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600">${c.unread}</div>`:''}
+    </div>`).join('');
+  return `
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+      <div class="hdr">
+        <div class="hdr-title">Messages</div>
+        <div class="hdr-right"><button class="btn-icon">✏️</button></div>
+      </div>
+      <div class="scroll">${rows}</div>
+      <button class="quick-exit" data-action="quick-exit">✕</button>
+    </div>`;
+}
+
+function chatDetail(){
+  const u=state.selectedConvo?state.selectedConvo.user:USERS[0];
+  const bubbles=state.messages.map(m=>`
+    <div style="display:flex;justify-content:${m.from==='me'?'flex-end':'flex-start'};margin-bottom:8px">
+      <div class="${m.from==='me'?'bubble-me':'bubble-them'}" style="max-width:72%;padding:10px 14px;border-radius:${m.from==='me'?'18px 18px 4px 18px':'18px 18px 18px 4px'}">
+        <div style="color:#fff;font-size:14px;line-height:1.5">${m.text}</div>
+        <div style="color:${m.from==='me'?'rgba(255,255,255,.55)':'#9E8FA0'};font-size:10px;margin-top:4px;text-align:right">${m.time}</div>
+      </div>
+    </div>`).join('');
+  const menuDropdown=state.showMenu?`
+    <div style="position:absolute;top:52px;right:12px;z-index:500;background:#1A1A1F;border:1px solid #2E2832;border-radius:12px;overflow:hidden;min-width:160px">
+      ${['View profile','Block user','Report user','Unmatch'].map(item=>`
+        <button data-action="close-menu" style="display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid #2E2832;padding:13px 16px;color:${item.includes('Block')||item.includes('Report')?'#E05C5C':'#F5F0F2'};font-size:14px;cursor:pointer;font-family:inherit">${item}</button>
+      `).join('')}
+    </div>`:'';
+  const safetyBanner=state.showSafetyBanner?`
+    <div style="background:rgba(139,94,140,.15);border:1px solid #8B5E8C;margin:8px 12px;border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;flex-shrink:0">
+      <span style="font-size:16px">🛡</span>
+      <div style="flex:1">
+        <div style="color:#F5F0F2;font-size:12px;font-weight:600;margin-bottom:2px">Safety tip</div>
+        <div style="color:#9E8FA0;font-size:11px;line-height:1.5">Never share personal info. Meet in public first. Trust your gut.</div>
+      </div>
+      <button data-action="dismiss-banner" style="background:none;border:none;color:#9E8FA0;cursor:pointer;font-size:16px;padding:0;font-family:inherit">✕</button>
+    </div>`:'';
+  return `
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;position:relative">
+      <div class="hdr">
+        <div class="hdr-left"><button class="btn-icon" data-action="back">←</button></div>
+        <div class="hdr-title" style="cursor:pointer" data-action="open-profile-from-chat">
+          <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+            <img src="${u.photos[0]}" style="width:32px;height:32px;border-radius:16px;object-fit:cover"/>
+            <div style="text-align:left">
+              <div style="font-size:15px;font-weight:600;color:#F5F0F2;line-height:1.1">${u.name}</div>
+              <div style="font-size:11px;color:${u.online?'#4CAF50':'#9E8FA0'}">${u.online?'● Online':'Offline'}</div>
+            </div>
+          </div>
+        </div>
+        <div class="hdr-right"><button class="btn-icon" data-action="toggle-menu">⋯</button></div>
+      </div>
+      ${menuDropdown}
+      ${safetyBanner}
+      <div class="scroll" id="msg-scroll" style="padding:8px 12px">${bubbles}<div id="msg-bottom"></div></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#1A1A1F;border-top:1px solid #2E2832;flex-shrink:0">
+        <button style="background:#222228;border:1px solid #2E2832;border-radius:20px;width:36px;height:36px;cursor:pointer;color:#9E8FA0;font-size:18px;flex-shrink:0;font-family:inherit">📷</button>
+        <input id="chat-input" type="text" placeholder="Message..." value="${state.chatInput}" style="flex:1;border-radius:20px;padding:10px 16px;font-size:14px"/>
+        <button data-action="send-msg" style="background:linear-gradient(135deg,#C2527A,#8B5E8C);border:none;border-radius:20px;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;flex-shrink:0;font-family:inherit">↑</button>
+      </div>
+      <button class="quick-exit" data-action="quick-exit">✕</button>
+    </div>`;
+}
+
+function myProfile(){
+  const photos=ME.photos.map((p,i)=>`
+    <div style="width:96px;height:116px;border-radius:12px;overflow:hidden;position:relative;border:2px solid ${i===0?'#C2527A':'#2E2832'};flex-shrink:0;cursor:pointer">
+      <img src="${p}" style="width:100%;height:100%;object-fit:cover"/>
+      ${i===0?'<div style="position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;font-weight:600;color:#fff;background:rgba(194,82,122,.75);padding:3px 0">MAIN</div>':''}
+      ${state.editMode?'<div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:10px;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;cursor:pointer">✕</div>':''}
+    </div>`).join('');
+  const addBtn=state.editMode&&ME.photos.length<5?`
+    <div style="width:96px;height:116px;border-radius:12px;border:2px dashed #2E2832;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;flex-shrink:0">
+      <span style="font-size:24px;color:#9E8FA0">+</span>
+      <span style="font-size:11px;color:#9E8FA0">Add photo</span>
+    </div>`:'';
+  const idPills=ALL_IDENTITY.map(t=>`
+    <button class="pill-btn ${state.myIdentity.includes(t)?'sel-mauve':''}" data-action="${state.editMode?'toggle-identity':''}" data-tag="${t}">${t}</button>`).join('');
+  const lkPills=ALL_LOOKING.map(t=>`
+    <button class="pill-btn ${state.myLooking.includes(t)?'sel-rose':''}" data-action="${state.editMode?'toggle-looking':''}" data-tag="${t}">${t}</button>`).join('');
+  const row=(label,sub,valKey)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid #2E2832">
+      <div>
+        <div style="color:#F5F0F2;font-size:14px">${label}</div>
+        ${sub?`<div style="color:#9E8FA0;font-size:11px;margin-top:2px">${sub}</div>`:''}
+      </div>
+      <button class="toggle ${state[valKey]?'on':''}" data-action="toggle-privacy" data-key="${valKey}"></button>
+    </div>`;
+  return `
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+      <div class="hdr">
+        <div class="hdr-title">My Profile</div>
+        <div class="hdr-right">
+          <button data-action="toggle-edit" style="background:${state.editMode?'linear-gradient(135deg,#C2527A,#8B5E8C)':'none'};border:${state.editMode?'none':'1px solid #2E2832'};border-radius:20px;padding:6px 14px;color:${state.editMode?'#fff':'#9E8FA0'};font-size:13px;cursor:pointer;font-family:inherit">${state.editMode?'Save':'Edit'}</button>
+        </div>
+      </div>
+      <div class="scroll" style="padding-bottom:24px">
+        <div style="padding:16px 16px 0;display:flex;gap:8px;overflow-x:auto">${photos}${addBtn}</div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:flex-end">
+            <div style="flex:2">
+              <div style="font-size:12px;font-weight:500;color:#9E8FA0;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Display Name</div>
+              ${state.editMode
+                ?`<input id="name-input" type="text" value="${state.myName}"/>`
+                :`<div style="color:#F5F0F2;font-size:17px;font-weight:600">${state.myName}, ${ME.age}</div>`
+              }
+            </div>
+            <span class="badge-grad">✓ Verified</span>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:#9E8FA0;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Bio</div>
+            ${state.editMode
+              ?`<textarea id="bio-input" rows="3">${state.myBio}</textarea>`
+              :`<div style="color:#F5F0F2;font-size:14px;line-height:1.6">${state.myBio}</div>`
+            }
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:#9E8FA0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Identity</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">${idPills}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:#9E8FA0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Looking for</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">${lkPills}</div>
+          </div>
+          <div class="card" style="overflow:hidden">
+            <div style="font-size:12px;font-weight:500;color:#9E8FA0;text-transform:uppercase;letter-spacing:1px;padding:12px 16px 4px">Privacy</div>
+            ${row('Incognito mode','Hide from grid unless you like them first','incognito')}
+            ${row('Hide my profile','Completely invisible to other users','hideProfile')}
+            ${row('Show exact distance','Off = distance fuzzed ±0.5 km','exactDist')}
+          </div>
+        </div>
+      </div>
+      <button class="quick-exit" data-action="quick-exit">✕</button>
+    </div>`;
+}
+
+function settings(){
+  if(state.showVerify) return verifyScreen();
+  if(state.showBlockList) return blockListScreen();
+  const notifRow=(k,label)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-top:1px solid #2E2832">
+      <div style="color:#F5F0F2;font-size:14px">${label}</div>
+      <button class="toggle ${state.notif[k]?'on':''}" data-action="toggle-notif" data-key="${k}"></button>
+    </div>`;
+  return `
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+      <div class="hdr"><div class="hdr-title">Safety & Settings</div></div>
+      <div class="scroll" style="padding-bottom:24px">
+        <div style="padding:14px 16px">
+          <button data-action="quick-exit" style="width:100%;background:#E05C5C;border:none;border-radius:16px;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 4px 20px rgba(224,92,92,.4);font-family:inherit">
+            <span style="font-size:20px">🚪</span>
+            <div style="text-align:left">
+              <div style="color:#fff;font-size:15px;font-weight:700">Quick Exit</div>
+              <div style="color:rgba(255,255,255,.7);font-size:11px">Immediately close app</div>
+            </div>
+          </button>
+        </div>
+        <div style="margin-bottom:8px">
+          <div class="sec-label">Account</div>
+          <div style="background:#222228;border-top:1px solid #2E2832;border-bottom:1px solid #2E2832">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-top:1px solid #2E2832">
+              <div>
+                <div style="color:#F5F0F2;font-size:14px">Photo Verification</div>
+                <div style="color:#9E8FA0;font-size:11px;margin-top:2px">Get the verified badge</div>
+              </div>
+              <button data-action="show-verify" style="background:linear-gradient(135deg,#C2527A,#8B5E8C);border:none;border-radius:20px;padding:6px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Verify</button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-top:1px solid #2E2832">
+              <div>
+                <div style="color:#F5F0F2;font-size:14px">Blocked users</div>
+                <div style="color:#9E8FA0;font-size:11px;margin-top:2px">2 blocked</div>
+              </div>
+              <button data-action="show-blocklist" style="background:none;border:1px solid #2E2832;border-radius:20px;padding:6px 14px;color:#9E8FA0;font-size:12px;cursor:pointer;font-family:inherit">Manage</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom:8px">
+          <div class="sec-label">Notifications</div>
+          <div style="background:#222228;border-top:1px solid #2E2832;border-bottom:1px solid #2E2832">
+            ${notifRow('messages','New messages')}
+            ${notifRow('likes','Someone likes you')}
+            ${notifRow('matches','New matches')}
+            ${notifRow('safety','Safety alerts')}
+          </div>
+        </div>
+        <div style="margin-bottom:8px">
+          <div class="sec-label">Safety Resources</div>
+          <div style="background:#222228;border-top:1px solid #2E2832;border-bottom:1px solid #2E2832">
+            ${[['📞','Crisis Text Line','Text HOME to 741741'],['🏳️‍🌈','Trevor Project','24/7 LGBTQ+ crisis support'],['⚖️','Community Guidelines','What we stand for'],['🔒','Privacy Policy','How we protect your data']].map(([icon,label,sub])=>`
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-top:1px solid #2E2832;cursor:pointer">
+                <span style="font-size:20px">${icon}</span>
+                <div style="flex:1">
+                  <div style="color:#F5F0F2;font-size:14px">${label}</div>
+                  <div style="color:#9E8FA0;font-size:11px;margin-top:2px">${sub}</div>
+                </div>
+                <span style="color:#9E8FA0">›</span>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div style="padding:0 16px">
+          <button data-action="sign-out" style="width:100%;background:none;border:1px solid rgba(224,92,92,.3);border-radius:16px;padding:14px 0;color:#E05C5C;font-size:14px;cursor:pointer;font-family:inherit">Sign Out</button>
+        </div>
+      </div>
+      <button class="quick-exit" data-action="quick-exit">✕</button>
+    </div>`;
+}
+
+function verifyScreen(){
+  return `
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+      <div class="hdr">
+        <div class="hdr-left"><button class="btn-icon" data-action="close-verify">←</button></div>
+        <div class="hdr-title">Photo Verification</div>
+      </div>
+      <div class="scroll" style="padding:24px;display:flex;flex-direction:column;align-items:center;gap:18px">
+        <div style="font-size:20px;font-weight:600;color:#F5F0F2;text-align:center">Verify your identity</div>
+        <div style="color:#9E8FA0;font-size:14px;text-align:center;line-height:1.6">Take a selfie matching the pose shown below to confirm you're a real person.</div>
+        <div style="width:180px;height:220px;border-radius:16px;border:2px dashed #8B5E8C;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(139,94,140,.05)">
+          <div style="font-size:64px">🥳</div>
+          <div style="color:#8B5E8C;font-size:13px;font-weight:500;text-align:center;padding:0 16px">Hold right hand up with two fingers</div>
+        </div>
+        <div class="card" style="padding:16px;width:100%">
+          ${['Face clearly visible','Good lighting','Match the pose','No filters or masks'].map(s=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+              <span style="color:#4CAF50;font-size:16px">✓</span>
+              <span style="color:#F5F0F2;font-size:13px">${s}</span>
+            </div>`).join('')}
+        </div>
+        <button class="btn-grad">📷  Take Verification Selfie</button>
+      </div>
+    </div>`;
+}
+
+function blockListScreen(){
+  const blocked=[USERS[5],USERS[9]];
+  return `
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+      <div class="hdr">
+        <div class="hdr-left"><button class="btn-icon" data-action="close-blocklist">←</button></div>
+        <div class="hdr-title">Blocked Users</div>
+      </div>
+      <div class="scroll">
+        ${blocked.map(u=>`
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid #2E2832">
+            <img src="${u.photos[0]}" style="width:44px;height:44px;border-radius:22px;object-fit:cover"/>
+            <div style="flex:1">
+              <div style="color:#F5F0F2;font-size:15px;font-weight:600">${u.name}</div>
+              <div style="color:#9E8FA0;font-size:12px">Blocked</div>
+            </div>
+            <button style="background:none;border:1px solid #2E2832;border-radius:20px;padding:6px 14px;color:#9E8FA0;font-size:12px;cursor:pointer;font-family:inherit">Unblock</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function quickExitOverlay(){
+  return `
+    <div style="position:absolute;inset:0;background:#0D0D0F;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px">
+      <div style="font-size:48px">🔒</div>
+      <div style="font-size:20px;font-weight:600;color:#F5F0F2;text-align:center">App Hidden</div>
+      <div style="color:#9E8FA0;font-size:14px;text-align:center;line-height:1.6">SZR is not visible. Tap below to return.</div>
+      <button data-action="close-quick-exit" style="background:linear-gradient(135deg,#C2527A,#8B5E8C);border:none;border-radius:24px;padding:14px 40px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(194,82,122,.35)">Return to SZR</button>
+    </div>`;
+}
+
+function tabsHTML(){
+  const tabs=[['grid','⊞','Grid'],['chats','💬','Chats'],['profile','👤','Me'],['settings','🛡','Safety']];
+  return `<div class="tabs">
+    ${tabs.map(([id,icon,label])=>`
+      <button class="tab ${state.tab===id?'active':''}" data-action="tab" data-tab="${id}">
+        <span class="tab-icon">${icon}</span><span>${label}</span>
+      </button>`).join('')}
+  </div>`;
+}
+
+function attachListeners(){
+  const bottom=document.getElementById('msg-bottom');
+  if(bottom) bottom.scrollIntoView();
+  const ci=document.getElementById('chat-input');
+  if(ci) ci.addEventListener('input',e=>{state.chatInput=e.target.value});
+  if(ci) ci.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sendMsg()}});
+  document.getElementById('app').addEventListener('click',handleClick);
+}
+
+function handleClick(e){
+  let el=e.target;
+  while(el&&el!==document.getElementById('app')){
+    const a=el.dataset.action;
+    if(a){doAction(a,el,e);return}
+    el=el.parentElement;
+  }
+}
+
+function doAction(a,el){
+  switch(a){
+    case'agegate-yes': go('login'); break;
+    case'agegate-no': state.ageDenied=true; render(); break;
+    case'login': go('grid'); break;
+    case'goto-signup': go('signup'); break;
+    case'back': go(state.prevScreen); break;
+    case'toggle-filter': state.showFilter=!state.showFilter; render(); break;
+    case'open-profile': {
+      const u=USERS.find(x=>x.id===+el.dataset.uid);
+      go('profile-detail',{selectedUser:u,photoIdx:0,liked:false,bioExpanded:false});
+      break;
+    }
+    case'open-chat': {
+      const u=state.selectedUser;
+      const c=CONVOS.find(x=>x.user.id===u.id)||{id:99,user:u,last:'',time:'now',unread:0};
+      go('chat-detail',{selectedConvo:c,messages:[...INIT_MSGS],showSafetyBanner:true});
+      break;
+    }
+    case'toggle-like': state.liked=!state.liked; render(); break;
+    case'toggle-bio': state.bioExpanded=!state.bioExpanded; render(); break;
+    case'show-report': state.showReport=true; render(); break;
+    case'close-report': state.showReport=false; render(); break;
+    case'open-convo': {
+      const c=CONVOS.find(x=>x.id===+el.dataset.cid);
+      go('chat-detail',{selectedConvo:c,messages:[...INIT_MSGS],showSafetyBanner:true});
+      break;
+    }
+    case'toggle-menu': state.showMenu=!state.showMenu; render(); break;
+    case'close-menu': state.showMenu=false; render(); break;
+    case'dismiss-banner': state.showSafetyBanner=false; render(); break;
+    case'send-msg': sendMsg(); break;
+    case'open-profile-from-chat': {
+      const u=state.selectedConvo?state.selectedConvo.user:USERS[0];
+      go('profile-detail',{selectedUser:u,photoIdx:0,liked:false,bioExpanded:false});
+      break;
+    }
+    case'tab': {
+      const t=el.dataset.tab;
+      state.tab=t;
+      const map={grid:'grid',chats:'chats',profile:'my-profile',settings:'settings'};
+      go(map[t]||t);
+      break;
+    }
+    case'toggle-edit': state.editMode=!state.editMode; render(); break;
+    case'toggle-identity': {
+      const t=el.dataset.tag;
+      if(!state.editMode)return;
+      state.myIdentity=state.myIdentity.includes(t)?state.myIdentity.filter(x=>x!==t):[...state.myIdentity,t];
+      render(); break;
+    }
+    case'toggle-looking': {
+      const t=el.dataset.tag;
+      if(!state.editMode)return;
+      state.myLooking=state.myLooking.includes(t)?state.myLooking.filter(x=>x!==t):[...state.myLooking,t];
+      render(); break;
+    }
+    case'toggle-privacy': {
+      const k=el.dataset.key;
+      state[k]=!state[k]; render(); break;
+    }
+    case'toggle-notif': {
+      const k=el.dataset.key;
+      state.notif[k]=!state.notif[k]; render(); break;
+    }
+    case'show-verify': state.showVerify=true; render(); break;
+    case'close-verify': state.showVerify=false; render(); break;
+    case'show-blocklist': state.showBlockList=true; render(); break;
+    case'close-blocklist': state.showBlockList=false; render(); break;
+    case'quick-exit': state.quickExit=true; render(); break;
+    case'close-quick-exit': state.quickExit=false; render(); break;
+    case'sign-out': go('login'); break;
+    case'photo-dot': state.photoIdx=+el.dataset.idx; render(); break;
+    case'photo-prev': state.photoIdx=Math.max(0,state.photoIdx-1); render(); break;
+    case'photo-next': {
+      const u=state.selectedUser;
+      if(u) state.photoIdx=Math.min(u.photos.length-1,state.photoIdx+1);
+      render(); break;
+    }
+  }
+}
+
+function sendMsg(){
+  const ci=document.getElementById('chat-input');
+  const text=(ci?ci.value:state.chatInput).trim();
+  if(!text)return;
+  state.messages=[...state.messages,{id:Date.now(),from:'me',text,time:'now'}];
+  state.chatInput='';
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
